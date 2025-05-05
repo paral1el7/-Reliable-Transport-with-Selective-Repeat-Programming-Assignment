@@ -80,7 +80,7 @@ void A_output(struct msg message)
       printf("SR A_output: Window not full, sending packet.\n");
 
     /* create packet */
-    sendpkt.seqnum = A_nextseqnum;
+    sendpkt.seqnum = nextseqnum;
     sendpkt.acknum = NOTINUSE;
     for ( i=0; i<20 ; i++ )
       sendpkt.payload[i] = message.data[i];
@@ -88,9 +88,9 @@ void A_output(struct msg message)
 
     /* put packet in window buffer */
     /* windowlast will always be 0 for alternating bit; but not for GoBackN */
-    windowlast = (windowlast + 1) % WINDOWSIZE;
-    buffer[windowlast] = sendpkt;
-    windowcount++;
+    buffer[nextseqnum] = sendpkt;
+    status[nextseqnum] = SENT_NOT_ACKED;
+
 
     /* send out packet */
     if (TRACE > 0)
@@ -102,7 +102,7 @@ void A_output(struct msg message)
       starttimer(A,RTT);
 
     /* get next sequence number, wrap back to 0 */
-    A_nextseqnum = (A_nextseqnum + 1) % SEQSPACE;
+    nextseqnum = (nextseqnum + 1) % SEQSPACE;
   }
   /* if blocked,  window is full */
   else {
