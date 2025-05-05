@@ -67,6 +67,9 @@ static struct pkt buffer[SEQSPACE];
 static enum PacketStatus status[SEQSPACE];
 static int base = 0;         
 static int nextseqnum = 0;   // 
+static struct pkt B_buffer[SEQSPACE];
+static int B_received[SEQSPACE];  // 0: not received, 1: received
+static int B_base = 0;
 
 /* called from layer 5 (application layer), passed the message to be sent to other side */
 void A_output(struct msg message)
@@ -209,47 +212,24 @@ static int B_nextseqnum;   /* the sequence number for the next packets sent by B
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
-  struct pkt sendpkt;
-  int i;
-
-  /* if not corrupted and received packet is in order */
-  if  ( (!IsCorrupted(packet))  && (packet.seqnum == expectedseqnum) ) {
+   if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
-      printf("----B: packet %d is correctly received, send ACK!\n",packet.seqnum);
-    packets_received++;
-
-    /* deliver to receiving application */
-    tolayer5(B, packet.payload);
-
-    /* send an ACK for the received packet */
-    sendpkt.acknum = expectedseqnum;
-
-    /* update state variables */
-    expectedseqnum = (expectedseqnum + 1) % SEQSPACE;
-  }
-  else {
-    /* packet is corrupted or out of order resend last ACK */
-    if (TRACE > 0)
-      printf("----B: packet corrupted or not expected sequence number, resend ACK!\n");
-    if (expectedseqnum == 0)
-      sendpkt.acknum = SEQSPACE - 1;
-    else
-      sendpkt.acknum = expectedseqnum - 1;
+      printf("SR B_input: Packet %d corrupted, ignored.\n", packet.seqnum);
+    return;
   }
 
-  /* create packet */
-  sendpkt.seqnum = B_nextseqnum;
-  B_nextseqnum = (B_nextseqnum + 1) % 2;
+  int seq = packet.seqnum;
 
-  /* we don't have any data to send.  fill payload with 0's */
-  for ( i=0; i<20 ; i++ )
-    sendpkt.payload[i] = '0';
+  if ((seq < B_base && B_base - seq > SEQSPACE / 2) ||
+      (seq >= B_base && seq < (B_base + WINDOWSIZE) % SEQSPACE)) {
 
-  /* computer checksum */
-  sendpkt.checksum = ComputeChecksum(sendpkt);
+    if (TRACE > 0)
+      printf("SR B_input: Packet %d within receive window.\n", seq);
 
-  /* send out packet */
-  tolayer3 (B, sendpkt);
+  } else {
+    if (TRACE > 0)
+      printf("SR B_input: Packet %d outside receive window, ignored.\n", seq);
+  }
 }
 
 /* the following routine will be called once (only) before any other */
