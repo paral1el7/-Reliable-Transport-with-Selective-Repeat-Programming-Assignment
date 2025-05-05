@@ -476,6 +476,3 @@ int main(void)
   printf("number of messages delivered to application:  %d \n", messages_delivered);
   return EXIT_SUCCESS;
 }
-float get_sim_time(void) {
-    return time;
-}
