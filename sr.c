@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "emulator.h"
 #include "gbn.h"
-extern float get_sim_time(void);
+
 /* ******************************************************************
    Go Back N protocol.  Adapted from J.F.Kurose
    ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.2
@@ -64,8 +64,7 @@ enum PacketStatus {
 
 static struct pkt buffer[SEQSPACE];
 static enum PacketStatus status[SEQSPACE];
-static int base = 0; 
-static float timer_start_time[SEQSPACE];  
+static int base = 0;   
 static bool timer_running[SEQSPACE];              
 static int nextseqnum = 0;   
 static struct pkt B_buffer[SEQSPACE];
@@ -102,7 +101,7 @@ void A_output(struct msg message)
     tolayer3 (A, sendpkt);
 	if (!timer_running[nextseqnum]) {
     timer_running[nextseqnum] = true;
-    timer_start_time[nextseqnum] = get_sim_time();  
+    
 	}
 	starttimer(A, RTT);
     nextseqnum = (nextseqnum + 1) % SEQSPACE;
@@ -176,20 +175,17 @@ if (!has_unacked) {
 /* called when A's timer goes off */
 void A_timerinterrupt(void)
 {
-  float current_time = get_sim_time();
   int i;
   for (i = 0; i < WINDOWSIZE; i++) {
     int idx = (base + i) % SEQSPACE;
-    if (status[idx] == SENT_NOT_ACKED && timer_running[idx]) {
-      if (current_time - timer_start_time[idx] >= RTT) {
-        tolayer3(A, buffer[idx]);
-        timer_start_time[idx] = current_time;  
-        if (TRACE > 0)
-          printf("SR A_timerinterrupt: Timeout, resent packet %d\n", buffer[idx].seqnum);
-      }
+    if (status[idx] == SENT_NOT_ACKED) {
+      tolayer3(A, buffer[idx]);
+      if (TRACE > 0)
+        printf("SR A_timerinterrupt: Timeout, resent packet %d\n", buffer[idx].seqnum);
     }
   }
 
+  
   starttimer(A, 1.0);
 }
 
@@ -204,7 +200,6 @@ void A_init(void)
 
   for (i = 0; i < SEQSPACE; i++) {
 	  timer_running[i] = false;
-      timer_start_time[i] = 0.0;
       status[i] = NOT_SENT;
   }
   
