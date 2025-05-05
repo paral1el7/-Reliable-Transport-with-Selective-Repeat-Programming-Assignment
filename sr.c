@@ -147,7 +147,8 @@ void A_input(struct pkt packet)
     }
 	
 	int has_unacked = 0;
-    for (int i = 0; i < WINDOWSIZE; i++) {
+	int i;
+    for (i = 0; i < WINDOWSIZE; i++) {
       int idx = (base + i) % SEQSPACE;
       if (status[idx] == SENT_NOT_ACKED) {
         has_unacked = 1;
