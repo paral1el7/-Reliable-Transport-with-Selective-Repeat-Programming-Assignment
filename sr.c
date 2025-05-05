@@ -185,6 +185,8 @@ void A_timerinterrupt(void)
       }
     }
   }
+
+  starttimer(A, 1.0);
 }
 
 
@@ -201,6 +203,8 @@ void A_init(void)
       timer_start_time[i] = 0.0;
       status[i] = NOT_SENT;
   }
+  
+  starttimer(A, 1.0);
 
   if (TRACE > 0)
     printf("SR A_init: Sender initialized.\n");
