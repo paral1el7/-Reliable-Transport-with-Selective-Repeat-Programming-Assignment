@@ -170,10 +170,11 @@ if (!has_unacked) {
 /* called when A's timer goes off */
 void A_timerinterrupt(void)
 {
+  int i;
   if (TRACE > 0)
     printf("SR A_timerinterrupt: Timer expired, resending unACKed packets.\n");
 
-  for (int i = 0; i < WINDOWSIZE; i++) {
+  for (i = 0; i < WINDOWSIZE; i++) {
     int idx = (base + i) % SEQSPACE;
     if (status[idx] == SENT_NOT_ACKED) {
       tolayer3(A, buffer[idx]);
@@ -190,10 +191,11 @@ void A_timerinterrupt(void)
 /* entity A routines are called. You can use it to do any initialization */
 void A_init(void)
 {
+  int i;
   base = 0;
   nextseqnum = 0;
 
-  for (int i = 0; i < SEQSPACE; i++) {
+  for (i = 0; i < SEQSPACE; i++) {
     status[i] = NOT_SENT;
   }
 
