@@ -191,14 +191,15 @@ void A_timerinterrupt(void)
 /* entity A routines are called. You can use it to do any initialization */
 void A_init(void)
 {
-  /* initialise A's window, buffer and sequence number */
-  A_nextseqnum = 0;  /* A starts with seq num 0, do not change this */
-  windowfirst = 0;
-  windowlast = -1;   /* windowlast is where the last packet sent is stored.
-		     new packets are placed in winlast + 1
-		     so initially this is set to -1
-		   */
-  windowcount = 0;
+  base = 0;
+  nextseqnum = 0;
+
+  for (int i = 0; i < SEQSPACE; i++) {
+    status[i] = NOT_SENT;
+  }
+
+  if (TRACE > 0)
+    printf("SR A_init: Sender initialized.\n");
 }
 
 
@@ -263,8 +264,14 @@ void B_input(struct pkt packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init(void)
 {
-  expectedseqnum = 0;
-  B_nextseqnum = 1;
+   B_base = 0;
+
+  for (int i = 0; i < SEQSPACE; i++) {
+    B_received[i] = 0;
+  }
+
+  if (TRACE > 0)
+    printf("SR B_init: Receiver initialized.\n");
 }
 
 /******************************************************************************
