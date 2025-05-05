@@ -127,7 +127,8 @@ void A_input(struct pkt packet)
     return;
   }
   
-  acknum = packet.acknum;
+  status[acknum] = ACKED;
+  timer_running[acknum] = false;
    
   if (TRACE > 0)
     printf("SR A_input: ACK %d passed checksum.\n", packet.acknum);
