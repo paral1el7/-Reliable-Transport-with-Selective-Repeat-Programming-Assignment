@@ -123,9 +123,24 @@ void A_input(struct pkt packet)
       printf("SR A_input: Corrupted ACK received, ignored.\n");
     return;
   }
-
+  
+   int acknum = packet.acknum;
+   
   if (TRACE > 0)
     printf("SR A_input: ACK %d passed checksum.\n", packet.acknum);
+
+  if ((acknum < base && base - acknum > SEQSPACE / 2) ||  // wrap-around case
+      (acknum >= base && acknum < (base + WINDOWSIZE) % SEQSPACE)) {
+
+ 
+    status[acknum] = ACKED;
+
+    if (TRACE > 0)
+      printf("SR A_input: ACK %d is within window and marked as ACKED.\n", acknum);
+  } else {
+    if (TRACE > 0)
+      printf("SR A_input: ACK %d is outside window, ignored.\n", acknum);
+  }
 }
 
 /* called when A's timer goes off */
