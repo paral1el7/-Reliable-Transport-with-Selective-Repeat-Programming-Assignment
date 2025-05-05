@@ -65,7 +65,9 @@ enum PacketStatus {
 
 static struct pkt buffer[SEQSPACE];
 static enum PacketStatus status[SEQSPACE];
-static int base = 0;         
+static int base = 0; 
+static float timer_start_time[SEQSPACE];  
+static bool timer_running[SEQSPACE];              
 static int nextseqnum = 0;   
 static struct pkt B_buffer[SEQSPACE];
 static int B_received[SEQSPACE];  
@@ -187,8 +189,7 @@ void A_timerinterrupt(void)
 
 
 
-/* the following routine will be called once (only) before any other */
-/* entity A routines are called. You can use it to do any initialization */
+
 void A_init(void)
 {
   int i;
@@ -196,7 +197,9 @@ void A_init(void)
   nextseqnum = 0;
 
   for (i = 0; i < SEQSPACE; i++) {
-    status[i] = NOT_SENT;
+	  timer_running[i] = false;
+      timer_start_time[i] = 0.0;
+      status[i] = NOT_SENT;
   }
 
   if (TRACE > 0)
@@ -239,7 +242,8 @@ void B_input(struct pkt packet)
     struct pkt ackpkt;
     ackpkt.seqnum = 0;
     ackpkt.acknum = seq;
-    for (int i = 0; i < 20; i++) ackpkt.payload[i] = 0;
+	int i;
+    for (i = 0; i < 20; i++) ackpkt.payload[i] = 0;
     ackpkt.checksum = ComputeChecksum(ackpkt);
     tolayer3(B, ackpkt);
 
@@ -263,9 +267,9 @@ void B_input(struct pkt packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init(void)
 {
-   B_base = 0;
-
-  for (int i = 0; i < SEQSPACE; i++) {
+  B_base = 0;
+  int i;
+  for (i = 0; i < SEQSPACE; i++) {
     B_received[i] = 0;
   }
 
