@@ -3,11 +3,10 @@
 #include <stdbool.h>
 #include "emulator.h"
 #include "gbn.h"
-
+extern float get_sim_time(void);
 /* ******************************************************************
    Go Back N protocol.  Adapted from J.F.Kurose
    ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.2
-
    Network properties:
    - one way network delay averages five time units (longer if there
    are other messages in the channel for GBN), but can be larger
@@ -99,7 +98,7 @@ void A_output(struct msg message)
 
     /* send out packet */
     if (TRACE > 0)
-      printf("SR A_output: Sent packet %d to layer 3\n", sendpkt.seqnum);
+      printf("Sending packet %d to layer 3\n", sendpkt.seqnum);
     tolayer3 (A, sendpkt);
 	if (!timer_running[nextseqnum]) {
     timer_running[nextseqnum] = true;
@@ -121,6 +120,7 @@ void A_output(struct msg message)
 void A_input(struct pkt packet)
 {
    int acknum;
+   int acknum = packet.acknum;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
       printf("SR A_input: Corrupted ACK received, ignored.\n");
@@ -133,7 +133,7 @@ void A_input(struct pkt packet)
   if (TRACE > 0)
     printf("SR A_input: ACK %d passed checksum.\n", packet.acknum);
 
-  if ((acknum < base && base - acknum > SEQSPACE / 2) ||  // wrap-around case
+  if ((acknum < base && base - acknum > SEQSPACE / 2) ||  
       (acknum >= base && acknum < (base + WINDOWSIZE) % SEQSPACE)) {
 
  
@@ -142,15 +142,16 @@ void A_input(struct pkt packet)
     if (TRACE > 0)
       printf("SR A_input: ACK %d is within window and marked as ACKED.\n", acknum);
   
-    while (status[base] == ACKED) {
+    int has_unacked = 0;
+	int i;
+	while (status[base] == ACKED) {
       if (TRACE > 0)
         printf("SR A_input: Sliding window, base %d -> %d\n", base, (base + 1) % SEQSPACE);
       status[base] = NOT_SENT;
       base = (base + 1) % SEQSPACE;
     }
 	
-	int has_unacked = 0;
-	int i;
+	
     for (i = 0; i < WINDOWSIZE; i++) {
       int idx = (base + i) % SEQSPACE;
       if (status[idx] == SENT_NOT_ACKED) {
@@ -174,7 +175,8 @@ if (!has_unacked) {
 void A_timerinterrupt(void)
 {
   float current_time = get_sim_time();
-  for (int i = 0; i < WINDOWSIZE; i++) {
+  int i；
+  for (i = 0; i < WINDOWSIZE; i++) {
     int idx = (base + i) % SEQSPACE;
     if (status[idx] == SENT_NOT_ACKED && timer_running[idx]) {
       if (current_time - timer_start_time[idx] >= RTT) {
@@ -219,13 +221,16 @@ void A_init(void)
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
+	int seq；
+	struct pkt ackpkt;
+	int i;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
       printf("SR B_input: Packet %d corrupted, ignored.\n", packet.seqnum);
     return;
   }
 
-  int seq = packet.seqnum;
+  seq = packet.seqnum;
 
   if ((seq < B_base && B_base - seq > SEQSPACE / 2) ||
       (seq >= B_base && seq < (B_base + WINDOWSIZE) % SEQSPACE)) {
@@ -243,10 +248,10 @@ void B_input(struct pkt packet)
         printf("SR B_input: Duplicate packet %d, already cached.\n", seq);
     }
 
-    struct pkt ackpkt;
+    
     ackpkt.seqnum = 0;
     ackpkt.acknum = seq;
-	int i;
+	
     for (i = 0; i < 20; i++) ackpkt.payload[i] = 0;
     ackpkt.checksum = ComputeChecksum(ackpkt);
     tolayer3(B, ackpkt);
@@ -271,8 +276,9 @@ void B_input(struct pkt packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init(void)
 {
-  B_base = 0;
   int i;
+  B_base = 0;
+  
   for (i = 0; i < SEQSPACE; i++) {
     B_received[i] = 0;
   }
