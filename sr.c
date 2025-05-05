@@ -66,9 +66,9 @@ enum PacketStatus {
 static struct pkt buffer[SEQSPACE];
 static enum PacketStatus status[SEQSPACE];
 static int base = 0;         
-static int nextseqnum = 0;   // 
+static int nextseqnum = 0;   
 static struct pkt B_buffer[SEQSPACE];
-static int B_received[SEQSPACE];  // 0: not received, 1: received
+static int B_received[SEQSPACE];  
 static int B_base = 0;
 
 /* called from layer 5 (application layer), passed the message to be sent to other side */
@@ -97,8 +97,10 @@ void A_output(struct msg message)
 
     /* send out packet */
     if (TRACE > 0)
-      printf("SR A_output: Sent packet %d to layer 3\n", sendpkt.seqnum);
+      printf("SR A_output: Sent packet %d to layer 3\n");
     tolayer3 (A, sendpkt);
+	if (base == nextseqnum)
+		starttimer(A, RTT);
 
     nextseqnum = (nextseqnum + 1) % SEQSPACE;
   }
@@ -116,13 +118,14 @@ void A_output(struct msg message)
 */
 void A_input(struct pkt packet)
 {
+   int acknum;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
       printf("SR A_input: Corrupted ACK received, ignored.\n");
     return;
   }
   
-   int acknum = packet.acknum;
+  acknum = packet.acknum;
    
   if (TRACE > 0)
     printf("SR A_input: ACK %d passed checksum.\n", packet.acknum);
