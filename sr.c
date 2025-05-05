@@ -99,12 +99,13 @@ void A_output(struct msg message)
 
     /* send out packet */
     if (TRACE > 0)
-      printf("SR A_output: Sent packet %d to layer 3\n");
+      printf("SR A_output: Sent packet %d to layer 3\n", sendpkt.seqnum);
     tolayer3 (A, sendpkt);
 	if (!timer_running[nextseqnum]) {
     timer_running[nextseqnum] = true;
     timer_start_time[nextseqnum] = get_sim_time();  
 	}
+	starttimer(A, RTT);
     nextseqnum = (nextseqnum + 1) % SEQSPACE;
   }else {
     if (TRACE > 0)
