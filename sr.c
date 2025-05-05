@@ -137,6 +137,13 @@ void A_input(struct pkt packet)
 
     if (TRACE > 0)
       printf("SR A_input: ACK %d is within window and marked as ACKED.\n", acknum);
+  
+    while (status[base] == ACKED) {
+      if (TRACE > 0)
+        printf("SR A_input: Sliding window, base %d -> %d\n", base, (base + 1) % SEQSPACE);
+      status[base] = NOT_SENT;
+      base = (base + 1) % SEQSPACE;
+    }
   } else {
     if (TRACE > 0)
       printf("SR A_input: ACK %d is outside window, ignored.\n", acknum);
