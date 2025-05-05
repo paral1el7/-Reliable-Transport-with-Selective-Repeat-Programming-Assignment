@@ -168,20 +168,18 @@ if (!has_unacked) {
 /* called when A's timer goes off */
 void A_timerinterrupt(void)
 {
-  int i;
-
   if (TRACE > 0)
-    printf("----A: time out,resend packets!\n");
+    printf("SR A_timerinterrupt: Timer expired, resending unACKed packets.\n");
 
-  for(i=0; i<windowcount; i++) {
-
-    if (TRACE > 0)
-      printf ("---A: resending packet %d\n", (buffer[(windowfirst+i) % WINDOWSIZE]).seqnum);
-
-    tolayer3(A,buffer[(windowfirst+i) % WINDOWSIZE]);
-    packets_resent++;
-    if (i==0) starttimer(A,RTT);
-  }
+  for (int i = 0; i < WINDOWSIZE; i++) {
+    int idx = (base + i) % SEQSPACE;
+    if (status[idx] == SENT_NOT_ACKED) {
+      tolayer3(A, buffer[idx]);
+      if (TRACE > 0)
+        printf("SR A_timerinterrupt: Resent packet %d\n", buffer[idx].seqnum);
+    }
+}
+  starttimer(A, RTT);
 }
 
 
