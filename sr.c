@@ -101,13 +101,12 @@ void A_output(struct msg message)
     if (TRACE > 0)
       printf("SR A_output: Sent packet %d to layer 3\n");
     tolayer3 (A, sendpkt);
-	if (base == nextseqnum)
-		starttimer(A, RTT);
-
+	if (!timer_running[nextseqnum]) {
+    timer_running[nextseqnum] = true;
+    timer_start_time[nextseqnum] = get_sim_time();  
+	}
     nextseqnum = (nextseqnum + 1) % SEQSPACE;
-  }
-  /* if blocked,  window is full */
-  else {
+  }else {
     if (TRACE > 0)
       printf("----A: New message arrives, send window is full\n");
     window_full++;
