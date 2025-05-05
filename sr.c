@@ -75,9 +75,9 @@ void A_output(struct msg message)
   int i;
 
   /* if not blocked waiting on ACK */
-  if ( windowcount < WINDOWSIZE) {
+  if ((nextseqnum + SEQSPACE - base) % SEQSPACE < WINDOWSIZE) {
     if (TRACE > 1)
-      printf("----A: New message arrives, send window is not full, send new messge to layer3!\n");
+      printf("SR A_output: Window not full, sending packet.\n");
 
     /* create packet */
     sendpkt.seqnum = A_nextseqnum;
