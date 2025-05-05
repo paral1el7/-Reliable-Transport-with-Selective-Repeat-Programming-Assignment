@@ -245,8 +245,14 @@ void B_input(struct pkt packet)
 
     if (TRACE > 0)
       printf("SR B_input: Sent ACK %d\n", ackpkt.acknum);
-
-
+    while (B_received[B_base] == 1) {
+      if (TRACE > 0)
+        printf("SR B_input: Delivering packet %d to layer 5\n", B_base);
+      tolayer5(B, B_buffer[B_base].payload);
+      B_received[B_base] = 0;
+      B_base = (B_base + 1) % SEQSPACE;
+    }
+  
   } else {
     if (TRACE > 0)
       printf("SR B_input: Packet %d outside receive window, ignored.\n", seq);
