@@ -120,7 +120,9 @@ void A_output(struct msg message)
 void A_input(struct pkt packet)
 {
    int acknum;
-   int acknum = packet.acknum;
+   int has_unacked;
+   int i;
+   acknum = packet.acknum;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
       printf("SR A_input: Corrupted ACK received, ignored.\n");
@@ -141,9 +143,9 @@ void A_input(struct pkt packet)
 
     if (TRACE > 0)
       printf("SR A_input: ACK %d is within window and marked as ACKED.\n", acknum);
+    
+	has_unacked = 0;
   
-    int has_unacked = 0;
-	int i;
 	while (status[base] == ACKED) {
       if (TRACE > 0)
         printf("SR A_input: Sliding window, base %d -> %d\n", base, (base + 1) % SEQSPACE);
@@ -175,13 +177,13 @@ if (!has_unacked) {
 void A_timerinterrupt(void)
 {
   float current_time = get_sim_time();
-  int i；
+  int i;
   for (i = 0; i < WINDOWSIZE; i++) {
     int idx = (base + i) % SEQSPACE;
     if (status[idx] == SENT_NOT_ACKED && timer_running[idx]) {
       if (current_time - timer_start_time[idx] >= RTT) {
         tolayer3(A, buffer[idx]);
-        timer_start_time[idx] = current_time;  // restart timer
+        timer_start_time[idx] = current_time;  
         if (TRACE > 0)
           printf("SR A_timerinterrupt: Timeout, resent packet %d\n", buffer[idx].seqnum);
       }
@@ -221,7 +223,7 @@ void A_init(void)
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
-	int seq；
+	int seq;
 	struct pkt ackpkt;
 	int i;
    if (packet.checksum != ComputeChecksum(packet)) {

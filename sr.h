@@ -9,7 +9,3 @@ extern void A_timerinterrupt(void);
 #define BIDIRECTIONAL 0       /*  0 = A->B  1 =  A<->B */
 extern void B_output(struct msg);
 extern void B_timerinterrupt(void);
-
-extern float get_sim_time(void);
-
-#endif
