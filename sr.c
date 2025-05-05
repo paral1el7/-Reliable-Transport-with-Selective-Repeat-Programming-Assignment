@@ -25,7 +25,7 @@
 #define RTT  16.0       /* round trip time.  MUST BE SET TO 16.0 when submitting assignment */
 #define WINDOWSIZE 6    /* the maximum number of buffered unacked packet
                           MUST BE SET TO 6 when submitting assignment */
-#define SEQSPACE 7      /* the min sequence space for GBN must be at least windowsize + 1 */
+#define SEQSPACE 64      /* the min sequence space for GBN must be at least windowsize + 1 */
 #define NOTINUSE (-1)   /* used to fill header fields that are not being used */
 
 /* generic procedure to compute the checksum of a packet.  Used by both sender and receiver
@@ -57,10 +57,16 @@ bool IsCorrupted(struct pkt packet)
 
 /********* Sender (A) variables and functions ************/
 
-static struct pkt buffer[WINDOWSIZE];  /* array for storing packets waiting for ACK */
-static int windowfirst, windowlast;    /* array indexes of the first/last packet awaiting ACK */
-static int windowcount;                /* the number of packets currently awaiting an ACK */
-static int A_nextseqnum;               /* the next sequence number to be used by the sender */
+enum PacketStatus {
+  NOT_SENT,
+  SENT_NOT_ACKED,
+  ACKED
+};
+
+static struct pkt buffer[SEQSPACE];
+static enum PacketStatus status[SEQSPACE];
+static int base = 0;         
+static int nextseqnum = 0;   // 
 
 /* called from layer 5 (application layer), passed the message to be sent to other side */
 void A_output(struct msg message)
