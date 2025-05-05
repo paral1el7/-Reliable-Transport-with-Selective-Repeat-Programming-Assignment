@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "emulator.h"
 #include "gbn.h"
-
+#include "sr.h"
 /* ******************************************************************
    Go Back N protocol.  Adapted from J.F.Kurose
    ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.2
@@ -80,7 +80,7 @@ void A_output(struct msg message)
   /* if not blocked waiting on ACK */
   if ((nextseqnum + SEQSPACE - base) % SEQSPACE < WINDOWSIZE) {
     if (TRACE > 1)
-      printf("SR A_output: Window not full, sending packet.\n");
+      printf("----A: New message arrives, send window is not full, send new messge to layer3!\n");
 
     /* create packet */
     sendpkt.seqnum = nextseqnum;
@@ -124,7 +124,7 @@ void A_input(struct pkt packet)
    acknum = packet.acknum;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
-      printf("SR A_input: Corrupted ACK received, ignored.\n");
+      printf("----A: uncorrupted ACK %d is received\n",packet.acknum);
     return;
   }
   
@@ -132,7 +132,7 @@ void A_input(struct pkt packet)
   timer_running[acknum] = false;
    
   if (TRACE > 0)
-    printf("SR A_input: ACK %d passed checksum.\n", packet.acknum);
+    printf("----A: ACK %d is not a duplicate\n",packet.acknum);
 
   if ((acknum < base && base - acknum > SEQSPACE / 2) ||  
       (acknum >= base && acknum < (base + WINDOWSIZE) % SEQSPACE)) {
@@ -141,13 +141,13 @@ void A_input(struct pkt packet)
     status[acknum] = ACKED;
 
     if (TRACE > 0)
-      printf("SR A_input: ACK %d is within window and marked as ACKED.\n", acknum);
+      printf("----A: ACK %d is within window and marked as ACKED.\n", acknum);
     
 	has_unacked = 0;
   
 	while (status[base] == ACKED) {
       if (TRACE > 0)
-        printf("SR A_input: Sliding window, base %d -> %d\n", base, (base + 1) % SEQSPACE);
+        printf("----A: Sliding window, base %d -> %d\n", base, (base + 1) % SEQSPACE);
       status[base] = NOT_SENT;
       base = (base + 1) % SEQSPACE;
     }
@@ -163,12 +163,12 @@ void A_input(struct pkt packet)
 
 if (!has_unacked) {
   if (TRACE > 0)
-    printf("SR A_input: All packets ACKed, stopping timer.\n");
+    printf("----A: duplicate ACK received, do nothing!\n");
   stoptimer(A);
 }
   } else {
     if (TRACE > 0)
-      printf("SR A_input: ACK %d is outside window, ignored.\n", acknum);
+      printf("----A: corrupted ACK is received, do nothing!\n");
   }
 }
 
@@ -181,7 +181,7 @@ void A_timerinterrupt(void)
     if (status[idx] == SENT_NOT_ACKED) {
       tolayer3(A, buffer[idx]);
       if (TRACE > 0)
-        printf("SR A_timerinterrupt: Timeout, resent packet %d\n", buffer[idx].seqnum);
+        printf("----A: Timeout, resent packet %d\n", buffer[idx].seqnum);
     }
   }
 
@@ -206,7 +206,7 @@ void A_init(void)
   starttimer(A, 1.0);
 
   if (TRACE > 0)
-    printf("SR A_init: Sender initialized.\n");
+    printf("----A: Sender initialized.\n");
 }
 
 
@@ -223,7 +223,7 @@ void B_input(struct pkt packet)
 	int i;
    if (packet.checksum != ComputeChecksum(packet)) {
     if (TRACE > 0)
-      printf("SR B_input: Packet %d corrupted, ignored.\n", packet.seqnum);
+      printf("----B: packet %d is correctly received, send ACK!\n",packet.seqnum);
     return;
   }
 
@@ -233,16 +233,16 @@ void B_input(struct pkt packet)
       (seq >= B_base && seq < (B_base + WINDOWSIZE) % SEQSPACE)) {
 
     if (TRACE > 0)
-      printf("SR B_input: Packet %d within receive window.\n", seq);
+      printf("----B: Packet %d within receive window.\n", seq);
 
     if (B_received[seq] == 0) {
       B_buffer[seq] = packet;
       B_received[seq] = 1;
       if (TRACE > 0)
-        printf("SR B_input: Cached packet %d\n", seq);
+        printf("----B: Cached packet %d\n", seq);
     } else {
       if (TRACE > 0)
-        printf("SR B_input: Duplicate packet %d, already cached.\n", seq);
+        printf("----B: Duplicate packet %d, already cached.\n", seq);
     }
 
     
@@ -254,10 +254,10 @@ void B_input(struct pkt packet)
     tolayer3(B, ackpkt);
 
     if (TRACE > 0)
-      printf("SR B_input: Sent ACK %d\n", ackpkt.acknum);
+      printf("----B: Sent ACK %d\n", ackpkt.acknum);
     while (B_received[B_base] == 1) {
       if (TRACE > 0)
-        printf("SR B_input: Delivering packet %d to layer 5\n", B_base);
+        printf("----B: Delivering packet %d to layer 5\n", B_base);
       tolayer5(B, B_buffer[B_base].payload);
       B_received[B_base] = 0;
       B_base = (B_base + 1) % SEQSPACE;
@@ -265,7 +265,7 @@ void B_input(struct pkt packet)
   
   } else {
     if (TRACE > 0)
-      printf("SR B_input: Packet %d outside receive window, ignored.\n", seq);
+      printf("----B: Packet %d outside receive window, ignored.\n", seq);
   }
 }
 
@@ -281,7 +281,7 @@ void B_init(void)
   }
 
   if (TRACE > 0)
-    printf("SR B_init: Receiver initialized.\n");
+    printf("----B: Receiver initialized.\n");
 }
 
 /******************************************************************************
