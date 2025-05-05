@@ -226,6 +226,27 @@ void B_input(struct pkt packet)
     if (TRACE > 0)
       printf("SR B_input: Packet %d within receive window.\n", seq);
 
+    if (B_received[seq] == 0) {
+      B_buffer[seq] = packet;
+      B_received[seq] = 1;
+      if (TRACE > 0)
+        printf("SR B_input: Cached packet %d\n", seq);
+    } else {
+      if (TRACE > 0)
+        printf("SR B_input: Duplicate packet %d, already cached.\n", seq);
+    }
+
+    struct pkt ackpkt;
+    ackpkt.seqnum = 0;
+    ackpkt.acknum = seq;
+    for (int i = 0; i < 20; i++) ackpkt.payload[i] = 0;
+    ackpkt.checksum = ComputeChecksum(ackpkt);
+    tolayer3(B, ackpkt);
+
+    if (TRACE > 0)
+      printf("SR B_input: Sent ACK %d\n", ackpkt.acknum);
+
+
   } else {
     if (TRACE > 0)
       printf("SR B_input: Packet %d outside receive window, ignored.\n", seq);
