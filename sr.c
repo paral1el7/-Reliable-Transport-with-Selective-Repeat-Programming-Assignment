@@ -144,6 +144,21 @@ void A_input(struct pkt packet)
       status[base] = NOT_SENT;
       base = (base + 1) % SEQSPACE;
     }
+	
+	int has_unacked = 0;
+    for (int i = 0; i < WINDOWSIZE; i++) {
+      int idx = (base + i) % SEQSPACE;
+      if (status[idx] == SENT_NOT_ACKED) {
+        has_unacked = 1;
+        break;
+    }
+}
+
+if (!has_unacked) {
+  if (TRACE > 0)
+    printf("SR A_input: All packets ACKed, stopping timer.\n");
+  stoptimer(A);
+}
   } else {
     if (TRACE > 0)
       printf("SR A_input: ACK %d is outside window, ignored.\n", acknum);
